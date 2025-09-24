@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Teacher Portal - Student Monitor</title>
+  <style>
+    body { font-family: Arial; margin: 0; padding: 0; background: #f8f9fa; color: #333; }
+    nav { background: #2c3e50; padding: 12px 20px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+    nav h1 { margin: 0; font-size: 20px; }
+    nav button { background: #e74c3c; border: none; color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer; }
+    nav button:hover { background: #c0392b; }
+    .container { padding: 20px; }
+    h2 { margin-bottom: 15px; }
+    table { border-collapse: collapse; width: 100%; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+    th { background: #34495e; color: #fff; }
+    tr.in { background: #d4edda; }
+    tr.out { background: #f8d7da; }
+    .status { margin-bottom: 15px; font-weight: bold; }
+    .highlight { color: #2c3e50; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <h1>Teacher Portal</h1>
+    <button onclick="logout()">Logout</button>
+  </nav>
+
+  <div class="container">
+    <h2>Student Attendance</h2>
+    <p class="status" id="status">Connecting...</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Student ID</th>
+          <th>Student Name</th>
+          <th>Latitude</th>
+          <th>Longitude</th>
+          <th>Status</th>
+          <th>Last Update</th>
+        </tr>
+      </thead>
+      <tbody id="table"></tbody>
+    </table>
+  </div>
+
+<script>
+function logout() { window.location.href = "login.html"; }
+
+(() => {
+  const status = document.getElementById('status');
+  const tbody = document.getElementById('table');
+  let devices = {};
+  let socket = null;
+
+  let my = { latitude: null, longitude: null };
+  let fixedLocation = false;
+
+  function wsUrl() {
+    return (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws/location/";
+  }
+
+  socket = new WebSocket(wsUrl());
+
+  socket.onopen = () => status.textContent = '✅ WebSocket connected. Waiting for student devices...';
+  socket.onclose = () => status.textContent = '⚠️ WebSocket closed';
+  socket.onerror = (e) => { status.textContent = '❌ WebSocket error'; console.error(e); };
+
+  socket.onmessage = (ev) => {
+    try {
+      const msg = JSON.parse(ev.data);
+      if (msg.type === 'location' && msg.payload) {
+        const p = msg.payload;
+        devices[p.id] = {
+          id: String(p.id),
+          name: p.name || `Student-${p.id}`,
+          latitude: parseFloat(p.latitude),
+          longitude: parseFloat(p.longitude),
+          ts: p.timestamp || Date.now()
+        };
+        renderTable();
+      }
+    } catch (e) { console.error("Bad WS message", e); }
+  };
+
+  // Haversine formula
+  function haversineMeters(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const toRad = d => d * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
+  // Teacher position
+  function onMyPos(pos) {
+    if (!fixedLocation) {
+      my.latitude = parseFloat(pos.coords.latitude);
+      my.longitude = parseFloat(pos.coords.longitude);
+      status.innerHTML = `📍 Classroom fixed at: <span class="highlight">${my.latitude.toFixed(6)}, ${my.longitude.toFixed(6)}</span>`;
+      fixedLocation = true;
+      renderTable();
+    }
+  }
+
+  function onMyErr(e) { status.textContent = '❌ Geolocation error: ' + e.message; }
+
+  if ('geolocation' in navigator) {
+    navigator.geolocation.getCurrentPosition(onMyPos, onMyErr, { enableHighAccuracy: true });
+  } else {
+    status.textContent = '❌ Geolocation not supported';
+  }
+
+  function renderTable() {
+    tbody.innerHTML = '';
+    const ids = Object.keys(devices).sort();
+    const thresholdMeters = 15; // Increased threshold for GPS drift
+
+    ids.forEach(id => {
+      const d = devices[id];
+      const tr = document.createElement('tr');
+
+      if (!isFinite(d.latitude) || !isFinite(d.longitude) || !isFinite(my.latitude) || !isFinite(my.longitude)) {
+        tr.className = 'out';
+        tr.innerHTML = `<td>${d.id}</td><td>${d.name}</td><td>-</td><td>-</td><td>NO DATA</td><td>${new Date(d.ts).toLocaleTimeString()}</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
+
+      const dist = haversineMeters(my.latitude, my.longitude, d.latitude, d.longitude);
+      console.log(`${d.id} distance: ${dist.toFixed(1)} m`); // Debug
+
+      const within = dist <= thresholdMeters;
+      tr.className = within ? 'in' : 'out';
+      tr.innerHTML = `<td>${d.id}</td><td>${d.name}</td><td>${d.latitude.toFixed(6)}</td><td>${d.longitude.toFixed(6)}</td><td>${within ? 'INSIDE' : 'OUTSIDE'} (${dist.toFixed(1)} m)</td><td>${new Date(d.ts).toLocaleTimeString()}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Student Dashboard — Location Sender</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f7fa;
+      color: #333;
+    }
+
+    /* Navbar */
+    .navbar {
+      background: #2575fc;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #fff;
+    }
+
+    .navbar h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .navbar .logout {
+      background: #fff;
+      color: #2575fc;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .navbar .logout:hover {
+      background: #e6e6e6;
+    }
+
+    /* Container */
+    .container {
+      max-width: 600px;
+      margin: 30px auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #2575fc;
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin: 15px 0 5px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    .btn {
+      margin-top: 15px;
+      width: 48%;
+      padding: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-start {
+      background: #2575fc;
+      color: white;
+    }
+
+    .btn-start:hover {
+      background: #1a5bd7;
+    }
+
+    .btn-stop {
+      background: #ff4b5c;
+      color: white;
+    }
+
+    .btn-stop:hover {
+      background: #d73848;
+    }
+
+    .status {
+      margin-top: 20px;
+      padding: 12px;
+      background: #f0f0f0;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Navbar -->
+  <div class="navbar">
+    <h1>Student Portal</h1>
+    <button class="logout" onclick="window.location.href='login.html'">Logout</button>
+  </div>
+
+  <!-- Main Container -->
+  <div class="container">
+    <h2>Send GPS Location</h2>
+
+    <label for="studentName">Student Name:</label>
+    <input id="studentName" type="text" placeholder="Enter your name" required />
+
+    <label for="deviceId">Student ID:</label>
+    <input id="deviceId" type="text" placeholder="Enter your class roll or id" required />
+
+    <div style="display:flex; justify-content:space-between; margin-top:10px;">
+      <button id="startBtn" class="btn btn-start">Start Sending</button>
+      <button id="stopBtn" class="btn btn-stop" disabled>Stop</button>
+    </div>
+
+    <p id="status" class="status">Not connected</p>
+  </div>
+
+  <script>
+    (() => {
+      const deviceIdInput = document.getElementById('deviceId');
+      const studentNameInput = document.getElementById('studentName');
+      const statusEl = document.getElementById('status');
+      let socket = null;
+      let watchId = null;
+
+      function wsUrl() {
+        const proto = (location.protocol === "https:") ? "wss://" : "ws://";
+        return proto + location.host + "/ws/location/";
+      }
+
+      document.getElementById('startBtn').addEventListener('click', () => {
+        if (!studentNameInput.value.trim() || !deviceIdInput.value.trim()) {
+          alert("Please enter both Student Name and Student ID before starting.");
+          return;
+        }
+
+        const id = deviceIdInput.value.trim() || ('device-' + Math.floor(Math.random() * 10000));
+        const studentName = studentNameInput.value.trim() || "Unknown Student";
+
+        // open websocket
+        socket = new WebSocket(wsUrl());
+        socket.onopen = () => {
+          statusEl.textContent = '✅ WebSocket connected. Sending location...';
+
+          // identify device + student
+          socket.send(JSON.stringify({ type: 'identify', role: 'device', id, name: studentName }));
+
+          if ('geolocation' in navigator) {
+            watchId = navigator.geolocation.watchPosition(pos => {
+              const payload = {
+                id,
+                name: studentName,
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                altitude: pos.coords.altitude,
+                accuracy: pos.coords.accuracy,
+                altitudeAccuracy: pos.coords.altitudeAccuracy,
+                timestamp: pos.timestamp
+              };
+              socket.send(JSON.stringify({ type: 'location', role: 'device', from: id, payload }));
+            }, err => {
+              statusEl.textContent = '❌ Geolocation error: ' + err.message;
+            }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('startBtn').disabled = true;
+          } else {
+            statusEl.textContent = '⚠️ Geolocation not supported';
+          }
+        };
+
+        socket.onclose = () => { statusEl.textContent = '⚠️ WebSocket closed'; };
+        socket.onerror = (e) => { statusEl.textContent = '⚠️ WebSocket error'; console.error(e); };
+      });
+
+      document.getElementById('stopBtn').addEventListener('click', () => {
+        if (watchId != null) {
+          navigator.geolocation.clearWatch(watchId);
+          watchId = null;
+        }
+        if (socket) {
+          socket.close();
+          socket = null;
+        }
+        document.getElementById('stopBtn').disabled = true;
+        document.getElementById('startBtn').disabled = false;
+        statusEl.textContent = '⏹️ Stopped';
+      });
+    })();
+  </script>
+</body>
+
+</html>
