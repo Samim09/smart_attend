@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require("bcrypt");
 const Admin = require("../models/admin");
 const Class = require("../models/class");
+const students = require("../models/student");
 
 // Admin login
 router.post("/login", async (req, res) => {
@@ -52,10 +53,9 @@ router.get("/classes", async (req, res) => {
 //add class
 
 
-router.post("/classes", async (req, res) => 
-  {
+router.post("/classes", async (req, res) => {
   try {
-    const { name, radius, latitude, longitude, altitude } = req.body;
+    const { name, radius, latitude, longitude, altitude, course, semester, section } = req.body;
 
     // Validate required fields
     if (!name || radius == null || latitude == null || longitude == null || altitude == null) {
@@ -65,7 +65,7 @@ router.post("/classes", async (req, res) =>
       });
     }
 
-    // Create new class
+    // 1. Create new class
     const newClass = new Class({
       name,
       radius,
@@ -76,9 +76,16 @@ router.post("/classes", async (req, res) =>
 
     const savedClass = await newClass.save();
 
+    // 2. Find students matching course + semester + section
+    const updatedResult = await students.updateMany(
+      { course, semester, section },             // filter
+      { $set: { assign_class: savedClass._id } } // update
+    );
+
     res.status(201).json({
       success: true,
       data: savedClass,
+      studentsUpdated: updatedResult.modifiedCount,
     });
   } catch (error) {
     console.error("Error creating class:", error);
@@ -89,7 +96,6 @@ router.post("/classes", async (req, res) =>
     });
   }
 });
-
 
 //delete 
 // Delete student
