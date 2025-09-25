@@ -42,23 +42,19 @@ router.get("/:id", async (req, res) => {
 // Create student
 router.post("/", async (req, res) => {
   try {
-    console.log("Incoming request body:", req.body);
-
     const { face_image, ...rest } = req.body;
 
+    // Save student with binary image
     const student = await Student.create({
       ...rest,
-      face_image: face_image ? Buffer.from(face_image, "base64").toString("base64") : null, 
-      // ✅ ensure we store in the correct schema field
+      face_image: face_image||null
     });
 
     res.json({ success: true, data: student });
   } catch (err) {
-    console.error("Error creating student:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
 
 // Update student
 router.put("/:id", async (req, res) => {

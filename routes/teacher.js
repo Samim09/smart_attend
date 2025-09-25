@@ -55,8 +55,7 @@ router.get("/:id", async (req, res) => {
 // ------------------------
 router.post("/", async (req, res) => {
   try {
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
-    const teacher = await Teacher.create({ ...req.body, password: hashedPassword });
+    const teacher = await Teacher.create({ ...req.body });
     res.json({ success: true, data: teacher });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
