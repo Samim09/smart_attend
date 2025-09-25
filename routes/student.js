@@ -42,6 +42,7 @@ router.get("/:id", async (req, res) => {
 // Create student
 router.post("/", async (req, res) => {
   try {
+    console.log("Incoming request body:", req.body); // ✅ Debugging log
     const { face_image, ...rest } = req.body;
 
     // Convert face_image to Buffer if exists
