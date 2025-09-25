@@ -52,7 +52,8 @@ router.get("/classes", async (req, res) => {
 //add class
 
 
-router.post("/classes", async (req, res) => {
+router.post("/classes", async (req, res) => 
+  {
   try {
     const { name, radius, latitude, longitude, altitude } = req.body;
 
@@ -87,5 +88,13 @@ router.post("/classes", async (req, res) => {
       error: error.message,
     });
   }
+});
+
+
+//delete 
+// Delete student
+router.delete("/classes/:id", async (req, res) => {
+  await Class.findByIdAndDelete(req.params.id);
+  res.json({ success: true });
 });
 module.exports = router;
