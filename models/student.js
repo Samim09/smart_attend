@@ -13,6 +13,18 @@ const studentSchema = new mongoose.Schema({
     unique: true,
     trim: true,
   },
+  course: {
+    type: String,
+    required: false,
+  },
+  semester: {
+    type: String,
+    required: false,
+  },
+  section: {
+    type: String,
+    required: false,
+  },
   name: {
     type: String,
     required: true,
@@ -21,15 +33,6 @@ const studentSchema = new mongoose.Schema({
     type: String,
     required: true, // should be hashed before saving
   },
-    course: {
-    type: String,
-    required: false, // should be hashed before saving
-  },
-    semester: {
-    type: String,
-    required: false, // should be hashed before saving
-  },
-  
   face_image: {
     type: String,
     required: false, // storing image path or base64 string

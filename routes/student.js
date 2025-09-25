@@ -42,8 +42,14 @@ router.get("/:id", async (req, res) => {
 // Create student
 router.post("/", async (req, res) => {
   try {
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
-    const student = await Student.create({ ...req.body, password: hashedPassword });
+    const { faceImage, ...rest } = req.body;
+
+    // Save student with binary image
+    const student = await Student.create({
+      ...rest,
+      faceImage: faceImage ? Buffer.from(faceImage, "base64") : null, // convert Base64 → Buffer
+    });
+
     res.json({ success: true, data: student });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
