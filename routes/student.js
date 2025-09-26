@@ -42,19 +42,44 @@ router.get("/:id", async (req, res) => {
 // Create student
 router.post("/", async (req, res) => {
   try {
-    const { face_image, ...rest } = req.body;
+    const {
+      name,
+      email,
+      course,
+      semester,
+      section,
+      face_image,
+      assign_class,
+      status
+    } = req.body;
 
-    // Save student with binary image
+    // Basic validation (optional but recommended)
+    if (!name || !email || !course || !semester || !section || !assign_class) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields"
+      });
+    }
+
+    // Save student
     const student = await Student.create({
-      ...rest,
-      face_image: face_image||null
+      name,
+      email,
+      course,
+      semester,
+      section,
+      face_image: face_image || null, // ✅ handles empty string or undefined
+      assign_class,
+      status: status || "active" // default status if not provided
     });
 
-    res.json({ success: true, data: student });
+    res.status(201).json({ success: true, data: student });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error("Error creating student:", err.message);
+    res.status(500).json({ success: false, error: "Server error" });
   }
 });
+
 
 // Update student
 router.put("/:id", async (req, res) => {
