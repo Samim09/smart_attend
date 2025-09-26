@@ -18,7 +18,7 @@ const studentSchema = new mongoose.Schema({
     required: false,
   },
   semester: {
-    type: String,
+    type: Number,
     required: false,
   },
   section: {
@@ -29,7 +29,7 @@ const studentSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-   password: {
+  password: {
     type: String,
     required: true, // should be hashed before saving
   },
