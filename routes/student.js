@@ -50,6 +50,7 @@ router.post("/", async (req, res) => {
       section,
       face_image,
       assign_class,
+      password,
       status
     } = req.body;
 
@@ -69,8 +70,9 @@ router.post("/", async (req, res) => {
       semester,
       section,
       face_image: face_image || null, // ✅ handles empty string or undefined
+      password: password || "defaultPassword123",
       assign_class,
-      status: status || "active" // default status if not provided
+      status: status  // default status if not provided
     });
 
     res.status(201).json({ success: true, data: student });
