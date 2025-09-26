@@ -38,6 +38,10 @@ const studentSchema = new mongoose.Schema({
     required: false, // storing image path or base64 string
   },
   assign_class: {
+    type: String,
+    required: false, // storing image path or base64 string
+  },
+  class_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Class", // reference to Class table
     required: false,

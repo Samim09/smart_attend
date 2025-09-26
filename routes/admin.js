@@ -79,7 +79,7 @@ router.post("/classes", async (req, res) => {
     // 2. Find students matching course + semester + section
     const updatedResult = await students.updateMany(
       { course, semester, section },             // filter
-      { $set: { assign_class: savedClass._id } } // update
+      { $set: { assign_class: savedClass.name , class_id: savedClass._id } } // update
     );
 
     res.status(201).json({
