@@ -49,16 +49,23 @@ router.post("/", async (req, res) => {
       semester,
       section,
       face_image,
-      assign_class,
       password,
-      status
     } = req.body;
 
-    // Basic validation (optional but recommended)
-    if (!name || !email || !course || !semester || !section || !assign_class) {
+    // Basic validation
+    if (!name || !email || !course || !semester || !section) {
       return res.status(400).json({
         success: false,
         error: "Missing required fields"
+      });
+    }
+
+    // ✅ Check if email already exists
+    const existingStudent = await Student.findOne({ email });
+    if (existingStudent) {
+      return res.status(400).json({
+        success: false,
+        error: "A student with this email already exists"
       });
     }
 
@@ -69,16 +76,14 @@ router.post("/", async (req, res) => {
       course,
       semester,
       section,
-      face_image: face_image || null, // ✅ handles empty string or undefined
+      face_image: face_image || null, // empty string or undefined handled
       password: password || "defaultPassword123",
-      assign_class,
-      status: status  // default status if not provided
     });
 
     res.status(201).json({ success: true, data: student });
   } catch (err) {
     console.error("Error creating student:", err.message);
-    res.status(500).json({ success: false, error: "Server error" });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
