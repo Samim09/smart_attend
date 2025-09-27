@@ -55,7 +55,7 @@ router.get("/classes", async (req, res) => {
 
 router.post("/classes", async (req, res) => {
   try {
-    const { name, radius, latitude, longitude, altitude, course, semester, section } = req.body;
+    const { name, radius, latitude, longitude, altitude, course, semester, time_start, time_end } = req.body;
 
     // Validate required fields
     if (!name || radius == null || latitude == null || longitude == null || altitude == null) {
