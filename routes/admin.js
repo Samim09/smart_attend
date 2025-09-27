@@ -72,6 +72,9 @@ router.post("/classes", async (req, res) => {
       latitude,
       longitude,
       altitude,
+      time_start,
+      time_end
+
     });
 
     const savedClass = await newClass.save();
