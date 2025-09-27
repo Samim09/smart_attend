@@ -6,22 +6,36 @@ const Student = require("../models/student");
 
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const teacher = await Student.findOne({ email });
-    if (!teacher) {
+    const { email, password, fcmToken } = req.body;
+
+    // Find the student by email
+    const student = await Student.findOne({ email });
+    if (!student) {
       return res.status(400).json({ success: false, error: "Invalid email or password" });
     }
 
-   
-    if (teacher.password !== password)  {
-      return res.status(400).json({ success: false, error: "Invalid username or password" });
+    // Compare passwords (plain text for now; ideally use bcrypt)
+    if (student.password !== password) {
+      return res.status(400).json({ success: false, error: "Invalid email or password" });
     }
 
-    res.json({ success: true, data: teacher, message: "Login successful" });
+    // Save/update FCM token if provided
+    if (fcmToken) {
+      student.fcmToken = fcmToken;
+      await student.save();
+    }
+
+    // Respond with student data
+    res.json({
+      success: true,
+      data: student,
+      message: "Login successful"
+    });
+
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
-});
+})
 // Get all students
 router.get("/", async (req, res) => {
  try {

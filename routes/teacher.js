@@ -55,12 +55,23 @@ router.get("/:id", async (req, res) => {
 // ------------------------
 router.post("/", async (req, res) => {
   try {
+    const { email } = req.body;
+
+    const existingTeacher = await Teacher.findOne({ email });
+    if (existingTeacher) {
+      return res.status(400).json({
+        success: false,
+        error: "Email is already registered",
+      });
+    }
+
     const teacher = await Teacher.create({ ...req.body });
     res.json({ success: true, data: teacher });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
 
 // ------------------------
 // UPDATE TEACHER

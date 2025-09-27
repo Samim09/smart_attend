@@ -25,6 +25,10 @@ const studentSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
+  fcmToken: {
+    type: String,
+    required: false,
+  },
   name: {
     type: String,
     required: true,
