@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const Teacher = require("../models/teacher");
-
+const authMiddleware = require("../middleware/auth")
 // ------------------------
 // LOGIN
 // ------------------------
@@ -14,12 +14,17 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ success: false, error: "Invalid email or password" });
     }
 
-   
-    if (teacher.password !== password)  {
+
+    if (teacher.password !== password) {
       return res.status(400).json({ success: false, error: "Invalid username or password" });
     }
+    const token = jwt.sign(
+      { id: teacher._id, email: teacher.email }, // payload
+      process.env.JWT_SECRET || "mysecretkey",  // secret key
+      { expiresIn: "7d" }  // token validity (7 days here)
+    );
 
-    res.json({ success: true, data: teacher, message: "Login successful" });
+    res.json({ success: true, token, data: teacher, message: "Login successful" });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -28,7 +33,7 @@ router.post("/login", async (req, res) => {
 // ------------------------
 // GET ALL TEACHERS
 // ------------------------
-router.get("/", async (req, res) => {
+router.get("/",authMiddleware, async (req, res) => {
   try {
     const teachers = await Teacher.find();
     res.json({ success: true, data: teachers });
@@ -40,7 +45,7 @@ router.get("/", async (req, res) => {
 // ------------------------
 // GET TEACHER BY ID
 // ------------------------
-router.get("/:id", async (req, res) => {
+router.get("/:id",authMiddleware, async (req, res) => {
   try {
     const teacher = await Teacher.findById(req.params.id);
     if (!teacher) return res.status(404).json({ success: false, error: "Teacher not found" });
@@ -53,7 +58,7 @@ router.get("/:id", async (req, res) => {
 // ------------------------
 // CREATE TEACHER
 // ------------------------
-router.post("/", async (req, res) => {
+router.post("/",authMiddleware, async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -76,7 +81,7 @@ router.post("/", async (req, res) => {
 // ------------------------
 // UPDATE TEACHER
 // ------------------------
-router.put("/:id", async (req, res) => {
+router.put("/:id",authMiddleware, async (req, res) => {
   try {
     if (req.body.password) {
       req.body.password = await bcrypt.hash(req.body.password, 10);
@@ -92,7 +97,7 @@ router.put("/:id", async (req, res) => {
 // ------------------------
 // DELETE TEACHER
 // ------------------------
-router.delete("/:id", async (req, res) => {
+router.delete("/:id",authMiddleware, async (req, res) => {
   try {
     const teacher = await Teacher.findByIdAndDelete(req.params.id);
     if (!teacher) return res.status(404).json({ success: false, error: "Teacher not found" });

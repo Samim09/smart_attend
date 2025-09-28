@@ -4,7 +4,7 @@ const bcrypt = require("bcrypt");
 const Admin = require("../models/admin");
 const Class = require("../models/class");
 const students = require("../models/student");
-
+const authMiddleware = require("../middleware/auth")
 // Admin login
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
@@ -40,7 +40,7 @@ router.post("/create-default", async (req, res) => {
   }
 });
 
-router.get("/classes", async (req, res) => {
+router.get("/classes",authMiddleware, async (req, res) => {
  try {
      const Students = await Class.find();
      res.json({ success: true, data: Students });
@@ -53,7 +53,7 @@ router.get("/classes", async (req, res) => {
 //add class
 
 
-router.post("/classes", async (req, res) => {
+router.post("/classes",authMiddleware, async (req, res) => {
   try {
     const { name, radius, latitude, longitude, altitude, course, semester, section, time_start, time_end } = req.body;
 
@@ -102,7 +102,7 @@ router.post("/classes", async (req, res) => {
 
 //delete 
 // Delete student
-router.delete("/classes/:id", async (req, res) => {
+router.delete("/classes/:id",authMiddleware, async (req, res) => {
   await Class.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 });
