@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const Teacher = require("../models/teacher");
+const jwt = require("jsonwebtoken");
 const authMiddleware = require("../middleware/auth")
 // ------------------------
 // LOGIN
